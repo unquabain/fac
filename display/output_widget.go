@@ -2,6 +2,8 @@ package display
 
 import "github.com/jroimartin/gocui"
 
+// OutputWidgetChannel is an enum for distinguising between
+// STDOUT and STDERR.
 type OutputWidgetChannel string
 
 const (
@@ -13,6 +15,8 @@ func (owc OutputWidgetChannel) String() string {
 	return string(owc)
 }
 
+// OutputWidget is a displayable widget for representing the
+// accumulated output of STDOUT or STDERR.
 type OutputWidget struct {
 	Widget
 	Channel OutputWidgetChannel
@@ -22,6 +26,8 @@ func (sw *OutputWidget) viewName() string {
 	return formatViewName(sw.Title, sw.Channel.String())
 }
 
+// Layout satisfies the gocui.Manager interface by
+// containing the drawing logic for the widget.
 func (ow *OutputWidget) Layout(g *gocui.Gui) error {
 	return ow.Widget.Layout(
 		ow.viewName(),
@@ -44,6 +50,8 @@ func (ow *OutputWidget) Layout(g *gocui.Gui) error {
 	)
 }
 
+// Unlayout removes the view from gocui.Gui's internal
+// memory.
 func (sow *OutputWidget) Unlayout(g *gocui.Gui) error {
 	viewName := sow.viewName()
 	v, err := g.View(viewName)

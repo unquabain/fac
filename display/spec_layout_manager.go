@@ -14,6 +14,8 @@ func (sa stringerAdapter) String() string {
 	return string(sa)
 }
 
+// FocusColumn is an enum for determining which of the
+// three columns should receive keyboard input.
 type FocusColumn int
 
 const (
@@ -22,6 +24,14 @@ const (
 	FCStdErr
 )
 
+// SpecLayoutManager is the main program layout manager.
+// It divides the screen into three columns: the left for
+// the Spec list, and the remaining are STDOUT and STDIN
+// for the running specs. While specs are running the
+// STDOUT and STDIN space is divided vertically for the
+// running specs. Once it's done, you can use the arrow
+// keys to navigate through the completed specs and
+// examine their output.
 type SpecLayoutManager struct {
 	spec.SpecList
 	IsFinished bool
@@ -50,6 +60,7 @@ func (slm *SpecLayoutManager) showConsole(pos int, s *spec.Spec) bool {
 	return s.GetStatus() == spec.StatusRunning
 }
 
+// Update enques a re-lay-out the screen from a goroutine.
 func (slm *SpecLayoutManager) Update(g *gocui.Gui) {
 	g.Update(func(gg *gocui.Gui) error {
 		slm.Layout(gg)
@@ -57,24 +68,34 @@ func (slm *SpecLayoutManager) Update(g *gocui.Gui) {
 	})
 }
 
+// ArrowUp updates the internal state in response to
+// an Arrow Up keyboard event in the task list.
 func (slm *SpecLayoutManager) ArrowUp() {
 	l := len(slm.SpecList)
 	slm.FocusRow = (l + slm.FocusRow - 1) % l
 }
 
+// ArrowDown updates the internal state in response to
+// an Arrow Down keyboard event in the task list.
 func (slm *SpecLayoutManager) ArrowDown() {
 	l := len(slm.SpecList)
 	slm.FocusRow = (slm.FocusRow + 1) % l
 }
 
+// SetFocusTaskList sets the internal state to focus on the
+// individual tasks in the task list.
 func (slm *SpecLayoutManager) SetFocusTaskList() {
 	slm.FocusColumn = FCTaskList
 }
 
+// SetFocusStdOut sets the internal state to display the
+// STDOUT pane as focused.
 func (slm *SpecLayoutManager) SetFocusStdOut() {
 	slm.FocusColumn = FCStdOut
 }
 
+// SetFocusStdErr sets the internal state to display the
+// STDERR pane as focused.
 func (slm *SpecLayoutManager) SetFocusStdErr() {
 	slm.FocusColumn = FCStdErr
 }
@@ -251,6 +272,8 @@ func (slm *SpecLayoutManager) setStderrKeybindings(sew *OutputWidget, g *gocui.G
 	)
 }
 
+// Layout satisfies the gocui.Manager interface.
+// The main drawing logic of the manager.
 func (slm *SpecLayoutManager) Layout(g *gocui.Gui) error {
 	debugger.Reset()
 	if !slm.IsFinished {

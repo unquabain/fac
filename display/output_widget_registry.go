@@ -11,6 +11,9 @@ type registryKey struct {
 	Channel OutputWidgetChannel
 }
 
+// OutputWidgetRegistry keeps track of all the widgets used,
+// even when they don't have current views in memory, in order
+// to preserve state.
 type OutputWidgetRegistry map[registryKey]*OutputWidget
 
 func (r OutputWidgetRegistry) makeOutputWidget(dims *layoutDims, task *spec.Spec, channel OutputWidgetChannel) *OutputWidget {

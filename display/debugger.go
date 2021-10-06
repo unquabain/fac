@@ -7,6 +7,8 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
+// Debugger is a display widget that should show debug information
+// in the Text UI.
 type Debugger struct{ strings.Builder }
 
 func (d *Debugger) dims() (int, int) {
@@ -23,6 +25,7 @@ func (d *Debugger) dims() (int, int) {
 	return x, y
 }
 
+// Layout draws the accumulated debug lines to the screen.
 func (d *Debugger) Layout(g *gocui.Gui) {
 	windowW, windowH := g.Size()
 	widgetW, widgetH := d.dims()

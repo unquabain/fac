@@ -5,6 +5,8 @@ import (
 	"github.com/jroimartin/gocui"
 )
 
+// StatusWidget is a widget that displays the current status of
+// a Spec in the left-hand column.
 type StatusWidget Widget
 
 func newStatusWidget(task *spec.Spec, width int, yIter func() int) *StatusWidget {
@@ -31,6 +33,8 @@ func (sw *StatusWidget) viewName() string {
 	return formatViewName(sw.Title, `status`)
 }
 
+// Layout satisfies the gocui.Manager interface, and
+// contains the graphical logic.
 func (sw *StatusWidget) Layout(g *gocui.Gui) error {
 	return (*Widget)(sw).Layout(
 		sw.viewName(),

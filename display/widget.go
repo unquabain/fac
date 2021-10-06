@@ -17,6 +17,9 @@ func formatViewName(title string, layoutType string) string {
 	return builder.String()
 }
 
+// Widget encapsulates a sub-view in the text interface.
+// It's an abstract base for other, differentiated widget
+// types.
 type Widget struct {
 	Title      string
 	Stringer   fmt.Stringer
@@ -26,6 +29,8 @@ type Widget struct {
 	OriginY    int
 }
 
+// Layout does NOT satisfy the gocui.Manager interface, but contains
+// the common logic for other widget types that do.
 func (w *Widget) Layout(viewName string, g *gocui.Gui, customize func(*gocui.View)) error {
 	v, err := g.SetView(
 		viewName,
@@ -52,14 +57,17 @@ func (w *Widget) Layout(viewName string, g *gocui.Gui, customize func(*gocui.Vie
 	return nil
 }
 
+// For scrolling widgets, updates the internal scroll position.
 func (w *Widget) CursorDown() {
 	w.OriginY += 1
 }
 
+// For scrolling widgets, updates the internal scroll position.
 func (w *Widget) PageDown() {
 	w.OriginY += 10
 }
 
+// For scrolling widgets, updates the internal scroll position.
 func (w *Widget) CursorUp() {
 	w.OriginY -= 1
 	if w.OriginY < 0 {
@@ -67,6 +75,7 @@ func (w *Widget) CursorUp() {
 	}
 }
 
+// For scrolling widgets, updates the internal scroll position.
 func (w *Widget) PageUp() {
 	w.OriginY -= 10
 	if w.OriginY < 0 {
@@ -74,6 +83,7 @@ func (w *Widget) PageUp() {
 	}
 }
 
+// For scrolling widgets, updates the internal scroll position.
 func (w *Widget) Home() {
 	w.OriginY = 0
 }

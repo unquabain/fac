@@ -8,8 +8,14 @@ import (
 	"github.com/Unquabain/thing-doer/util"
 )
 
+// SpecList represents all the Specs found in the spec file (YAML)
+// and includes the methods to resolve their interdependencies and
+// run them.
 type SpecList map[string]*Spec
 
+// UnmarshalYAML decorates the Specs found in the YAML spec file
+// with some additional properties and initializes the Specs'
+// internal structures.
 func (sl SpecList) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	temp := make(map[string]*Spec)
 	err := unmarshal(&temp)
@@ -37,6 +43,8 @@ func parseDependencyName(depencencyName string) (key string, positive bool) {
 	return
 }
 
+// IsRunnable examines a Spec's dependency list and determines
+// if it has been satisfied.
 func (sl SpecList) IsRunnable(spec *Spec) (bool, error) {
 	if spec.GetStatus() != StatusNotRun {
 		return false, nil
@@ -66,6 +74,8 @@ func (sl SpecList) IsRunnable(spec *Spec) (bool, error) {
 	return true, nil
 }
 
+// ReadyToRun returns a list of all the Specs that are currently
+// ready to run because their dependencies have been satisified.
 func (sl SpecList) ReadyToRun() ([]*Spec, error) {
 	runnables := make([]*Spec, 0, len(sl))
 	for _, spec := range sl {
@@ -80,6 +90,8 @@ func (sl SpecList) ReadyToRun() ([]*Spec, error) {
 	return runnables, nil
 }
 
+// IsFinished tells the caller if all the Specs that can be
+// run have been run (successfully or not).
 func (sl SpecList) IsFinished() bool {
 	for _, spec := range sl {
 		if spec.GetStatus() == StatusNotRun {
@@ -89,6 +101,23 @@ func (sl SpecList) IsFinished() bool {
 	return true
 }
 
+// RunAll runs all the Specs, resolving their dependencies to
+// run as many as it can in parallel. The function blocks until
+// all Specs have been run, but the handler() callback will be
+// called several times for each spec from different goroutines.
+//
+// First, all the specs that have no dependencies are run in
+// parallel. After each spec finishes, the SpecList checks to
+// see if any more specs have had their dependencies satisfied
+// and launches those. The procedure runs until all specs have
+// either run or been marked unrunnable (because their
+// dependencies failed).
+//
+// If it ever finds that there are no currently running Specs,
+// but no runnable Specs, but Specs that have not yet been run,
+// it returns an error. It will also return an error if at least
+// one Spec returns an error, though it may accumulate more errors,
+// which are printed on STDERR.
 func (sl SpecList) RunAll(handler func(*Spec)) error {
 	runningTasks := new(util.Counter)
 	errors := util.NewErrorList()

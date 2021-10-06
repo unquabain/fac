@@ -1,5 +1,6 @@
 package spec
 
+// Status is an enum for the lifecycle of a Spec.
 type Status uint32
 
 const (
@@ -27,6 +28,9 @@ func (s Status) String() string {
 	}
 }
 
+// IsOK boils the status down to a simple boolean
+// meaning whether or not the outcome is expected
+// or exceptional.
 func (s Status) IsOK() bool {
 	switch s {
 	case StatusNotRun:
