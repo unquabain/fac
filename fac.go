@@ -13,7 +13,7 @@ import (
 )
 
 func printUsage() {
-	fmt.Println(`Usage: %s taskfile.yaml`, os.Args[0])
+	fmt.Printf("Usage: %s taskfile.yaml\n", os.Args[0])
 	fmt.Println(``)
 	fmt.Println(`Options:`)
 	fmt.Println(`  taskfile.yaml A YAML file with the things to do`)
