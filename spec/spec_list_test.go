@@ -23,6 +23,10 @@ Update Bundler:
     - update
   dependencies:
     - Clear Logs
+Only On Fail:
+  command: fortune
+  dependencies:
+    - "! Clear Logs"
 `
 
 func getSpecListFromYaml(serialized string) (SpecList, error) {
@@ -38,7 +42,7 @@ func TestUnmarshalYAML(t *testing.T) {
 	if err != nil {
 		t.Fatalf(`could not test validity of unmarshaled list: %v`, err)
 	}
-	if actual := len(list); actual != 2 {
+	if actual := len(list); actual != 3 {
 		t.Fatalf(`unexpected length of list: %d`, actual)
 	}
 
@@ -107,6 +111,10 @@ func TestIsRunnable(t *testing.T) {
 	if !ok {
 		t.Fatalf(`did not find spec entry for "Update Bundler"`)
 	}
+	onlyOnFail, ok := list[`Only On Fail`]
+	if !ok {
+		t.Fatalf(`did not find spec entry for "Only On Fail"`)
+	}
 
 	// "Clear Logs" has no dependencies and has not yet been run.
 	// Should be runnable.
@@ -159,6 +167,40 @@ func TestIsRunnable(t *testing.T) {
 		}
 		t.Fatalf(`expected "Update Bundler" to be runnable; wasn't`)
 	}
+
+	// Only On Fail is only runnable if Clear Logs failed.
+	clearLogs.results.SetStatus(StatusNotRun)
+	onlyOnFail.results.SetStatus(StatusNotRun)
+	if actual, err := list.IsRunnable(onlyOnFail); err != nil || actual {
+		if err != nil {
+			t.Fatalf(`couldn't tell if "Only On Fail" was runnable: %v`, err)
+		}
+		t.Fatalf(`expected "Only On Fail" not to be runnable; was`)
+	}
+	clearLogs.results.SetStatus(StatusDependenciesNotMet)
+	onlyOnFail.results.SetStatus(StatusNotRun)
+	if actual, err := list.IsRunnable(onlyOnFail); err != nil || actual {
+		if err != nil {
+			t.Fatalf(`couldn't tell if "Only On Fail" was runnable: %v`, err)
+		}
+		t.Fatalf(`expected "Only On Fail" not to be runnable; was`)
+	}
+	clearLogs.results.SetStatus(StatusSucceeded)
+	onlyOnFail.results.SetStatus(StatusNotRun)
+	if actual, err := list.IsRunnable(onlyOnFail); err != nil || actual {
+		if err != nil {
+			t.Fatalf(`couldn't tell if "Only On Fail" was runnable: %v`, err)
+		}
+		t.Fatalf(`expected "Only On Fail" not to be runnable; was`)
+	}
+	clearLogs.results.SetStatus(StatusFailed)
+	onlyOnFail.results.SetStatus(StatusNotRun)
+	if actual, err := list.IsRunnable(onlyOnFail); err != nil || !actual {
+		if err != nil {
+			t.Fatalf(`couldn't tell if "Only On Fail" was runnable: %v`, err)
+		}
+		t.Fatalf(`expected "Only On Fail" to be runnable; wasn't`)
+	}
 }
 
 func TestReadyToRun(t *testing.T) {
@@ -204,6 +246,7 @@ func TestIsFinished(t *testing.T) {
 	if list.IsFinished() {
 		t.Fatalf(`expected list not to be finished, but was`)
 	}
+	list[`Only On Fail`].results.SetStatus(StatusSucceeded)
 	list[`Update Bundler`].results.SetStatus(StatusDependenciesNotMet)
 	if !list.IsFinished() {
 		t.Fatalf(`expected list to be finished, but was not`)

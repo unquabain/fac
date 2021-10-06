@@ -3,6 +3,7 @@ package spec
 import (
 	"fmt"
 	"log"
+	"strings"
 
 	"github.com/Unquabain/thing-doer/util"
 )
@@ -26,6 +27,16 @@ func (sl SpecList) UnmarshalYAML(unmarshal func(interface{}) error) error {
 	return nil
 }
 
+func parseDependencyName(depencencyName string) (key string, positive bool) {
+	positive = true
+	key = strings.TrimSpace(depencencyName)
+	if strings.HasPrefix(key, `!`) || strings.HasPrefix(key, `-`) {
+		positive = false
+		key = strings.TrimSpace(key[1:])
+	}
+	return
+}
+
 func (sl SpecList) IsRunnable(spec *Spec) (bool, error) {
 	if spec.GetStatus() != StatusNotRun {
 		return false, nil
@@ -34,16 +45,21 @@ func (sl SpecList) IsRunnable(spec *Spec) (bool, error) {
 		return true, nil
 	}
 	for _, dep := range spec.Dependencies {
-		depSpec, ok := sl[dep]
+		key, positive := parseDependencyName(dep)
+		depSpec, ok := sl[key]
 		if !ok {
 			return false, fmt.Errorf(`dependency not found for %q: %q`, spec.Name, dep)
 		}
+		successStatus, failedStatus := StatusSucceeded, StatusFailed
+		if !positive {
+			successStatus, failedStatus = failedStatus, successStatus
+		}
 		dsStatus := depSpec.GetStatus()
-		if dsStatus == StatusFailed || dsStatus == StatusDependenciesNotMet {
+		if dsStatus == failedStatus || dsStatus == StatusDependenciesNotMet {
 			spec.results.SetStatus(StatusDependenciesNotMet)
 			return false, nil
 		}
-		if dsStatus != StatusSucceeded {
+		if dsStatus != successStatus {
 			return false, nil
 		}
 	}
