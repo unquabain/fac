@@ -6,19 +6,19 @@ import (
 	"log"
 	"os"
 
-	"github.com/Unquabain/thing-doer/display"
-	"github.com/Unquabain/thing-doer/spec"
+	"github.com/Unquabain/fac/display"
+	"github.com/Unquabain/fac/task"
 	"github.com/jroimartin/gocui"
 	yaml "gopkg.in/yaml.v2"
 )
 
 func printUsage() {
-	fmt.Println(`Usage: %s specfile.yaml`, os.Args[0])
+	fmt.Println(`Usage: %s taskfile.yaml`, os.Args[0])
 	fmt.Println(``)
 	fmt.Println(`Options:`)
-	fmt.Println(`  specfile.yaml A YAML file with the things to do`)
+	fmt.Println(`  taskfile.yaml A YAML file with the things to do`)
 	fmt.Println(``)
-	fmt.Println(`Example Specfile:`)
+	fmt.Println(`Example Taskfile:`)
 	fmt.Println(`---
 Clear Logs:
   command: zsh
@@ -53,14 +53,14 @@ func main() {
 		printUsage()
 		os.Exit(-2)
 	}
-	list := make(spec.SpecList)
+	list := make(task.TaskList)
 	err = yaml.Unmarshal(buff, &list)
 	if err != nil {
 		log.Printf(`No love here. %v`, err)
 		printUsage()
 		os.Exit(-3)
 	}
-	manager := &display.SpecLayoutManager{SpecList: list}
+	manager := &display.TaskLayoutManager{TaskList: list}
 
 	g, err := gocui.NewGui(gocui.Output256)
 	if err != nil {
@@ -70,7 +70,7 @@ func main() {
 	defer g.Close()
 	g.SetManager(manager)
 
-	handler := func(s *spec.Spec) {
+	handler := func(s *task.Task) {
 		g.Update(func(gg *gocui.Gui) error {
 			return manager.Layout(gg)
 		})

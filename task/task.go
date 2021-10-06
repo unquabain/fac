@@ -1,4 +1,4 @@
-package spec
+package task
 
 import (
 	"fmt"
@@ -9,16 +9,16 @@ import (
 	"sync"
 )
 
-// Spec is the specification of a task to run
+// Task is the taskification of a task to run
 // and its dependencies.
-type Spec struct {
-	// Name is the name of the spec, and how other specs
+type Task struct {
+	// Name is the name of the task, and how other tasks
 	// will refer to it in their dependency list.
 	Name string `yaml:"-"`
 
-	// Dependencies is a list of other Spec.Name values
+	// Dependencies is a list of other Task.Name values
 	// that must succeed (or fail if they are prefixed with
-	// either "!" or "-") before this spec can be run.
+	// either "!" or "-") before this task can be run.
 	Dependencies []string
 
 	// Command is the executable to run.
@@ -32,18 +32,18 @@ type Spec struct {
 	Environment map[string]string
 
 	// ExpectedReturnCode is the return code that
-	// Command should result in to consider this Spec
+	// Command should result in to consider this Task
 	// successful.
 	ExpectedReturnCode int `yaml:"expectedReturnCode"`
 
 	// ExpectedStdOutRegex is a pattern that, if present,
 	// will be checked against the full STDOUT to qualify
-	// this Spec run as successful.
+	// this Task run as successful.
 	ExpectedStdOutRegex string `yaml:"expectedStdOutRegex"`
 
 	// ExpectedStdErrRegex is a pattern that, if present,
 	// will be checked against the full STDERR to qualify
-	// this Spec run as successful.
+	// this Task run as successful.
 	ExpectedStdErrRegex string `yaml:"expectedStdErrRegex"`
 
 	// Order is set in the YAML parser for consistency
@@ -55,21 +55,21 @@ type Spec struct {
 }
 
 // GetStatus gets the current status atomically.
-func (s *Spec) GetStatus() Status {
+func (s *Task) GetStatus() Status {
 	return s.results.GetStatus()
 }
 
 // GetStdOut gets the accumulated STDOUT text atomically.
-func (s *Spec) GetStdOut() string {
+func (s *Task) GetStdOut() string {
 	return s.results.GetStdOut()
 }
 
 // GetStdErr gets the accumulated STDERR text atomically.
-func (s *Spec) GetStdErr() string {
+func (s *Task) GetStdErr() string {
 	return s.results.GetStdErr()
 }
 
-func (s *Spec) evaluateSuccess() {
+func (s *Task) evaluateSuccess() {
 	if s.results.GetStatus() == StatusFailed {
 		return
 	}
@@ -94,7 +94,7 @@ func (s *Spec) evaluateSuccess() {
 	s.results.SetSuccess()
 }
 
-func (s *Spec) env() []string {
+func (s *Task) env() []string {
 	env := make([]string, 0, len(os.Environ())+len(s.Environment))
 	copy(env, os.Environ())
 	for key, val := range s.Environment {
@@ -103,11 +103,11 @@ func (s *Spec) env() []string {
 	return env
 }
 
-// Run runs the command defined by Spec. It blocks until the
+// Run runs the command defined by Task. It blocks until the
 // command has finished, but updateHandler will be called
 // several times from different go routines whenever a change
-// has been made to the status of the Spec.
-func (s *Spec) Run(updateHandler func(*Spec)) error {
+// has been made to the status of the Task.
+func (s *Task) Run(updateHandler func(*Task)) error {
 	var wg sync.WaitGroup
 	s.results.SetStatus(StatusRunning)
 	updateHandler(s)
@@ -137,7 +137,7 @@ func (s *Spec) Run(updateHandler func(*Spec)) error {
 			}
 			if err != nil {
 				if err != io.EOF {
-					fmt.Println(`Could not read std in from spec`, s.Name, `read bytes`, n, err)
+					fmt.Println(`Could not read std in from task`, s.Name, `read bytes`, n, err)
 					s.results.SetStatus(StatusFailed)
 				}
 				return

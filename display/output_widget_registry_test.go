@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Unquabain/thing-doer/spec"
+	"github.com/Unquabain/fac/task"
 	"gopkg.in/yaml.v2"
 )
 
@@ -15,11 +15,11 @@ Test 2:
   command: echo
 `
 
-func newSpecList() (spec.SpecList, error) {
-	list := make(spec.SpecList)
+func newTaskList() (task.TaskList, error) {
+	list := make(task.TaskList)
 	err := yaml.Unmarshal([]byte(sampleYAML), &list)
 	if err != nil {
-		return nil, fmt.Errorf(`could not create example SpecList: %w`, err)
+		return nil, fmt.Errorf(`could not create example TaskList: %w`, err)
 	}
 	return list, nil
 }
@@ -27,7 +27,7 @@ func newSpecList() (spec.SpecList, error) {
 func TestOutputWidgetRegistryTest(t *testing.T) {
 	ld := newLayoutDims(240, 100)
 	owr := make(OutputWidgetRegistry)
-	list, err := newSpecList()
+	list, err := newTaskList()
 	if err != nil {
 		t.Fatalf(`Could not initialize test: %v`, err)
 	}

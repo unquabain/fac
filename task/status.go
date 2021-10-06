@@ -1,6 +1,6 @@
-package spec
+package task
 
-// Status is an enum for the lifecycle of a Spec.
+// Status is an enum for the lifecycle of a Task.
 type Status uint32
 
 const (

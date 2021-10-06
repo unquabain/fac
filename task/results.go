@@ -1,11 +1,11 @@
-package spec
+package task
 
 import (
 	"strings"
 	"sync"
 )
 
-// Results represents the changing state of the Spec as the program is run.
+// Results represents the changing state of the Task as the program is run.
 type Results interface {
 	// GetStdOut returns the accumulated text printed to stdout.
 	GetStdOut() string
@@ -26,10 +26,10 @@ type Results interface {
 	// SetReturnCode replaces the stored return code.
 	SetReturnCode(int)
 
-	// GetStatus returns the current state of the Spec.
+	// GetStatus returns the current state of the Task.
 	GetStatus() Status
 
-	// SetStatus replaces the current state of the Spec.
+	// SetStatus replaces the current state of the Task.
 	SetStatus(Status)
 }
 
@@ -77,13 +77,13 @@ func (r *results) SetReturnCode(returnCode int) {
 	r.returnCode = returnCode
 }
 
-// GetStatus returns the current state of the Spec.
+// GetStatus returns the current state of the Task.
 // Implements Results interface.
 func (r *results) GetStatus() Status {
 	return r.status
 }
 
-// SetStatus replaces the current state of the Spec.
+// SetStatus replaces the current state of the Task.
 // Implements Results interface.
 func (r *results) SetStatus(status Status) {
 	r.status = status
@@ -178,7 +178,7 @@ func (r *ResultsProxy) SetReturnCode(returnCode int) {
 	r.Atomic(func(results Results) { results.SetReturnCode(returnCode) })
 }
 
-// GetStatus returns the current state of the Spec.
+// GetStatus returns the current state of the Task.
 // Implements Results interface.
 func (r *ResultsProxy) GetStatus() Status {
 	r.mtx.RLock()
@@ -186,7 +186,7 @@ func (r *ResultsProxy) GetStatus() Status {
 	return r.results.status
 }
 
-// SetStatus replaces the current state of the Spec.
+// SetStatus replaces the current state of the Task.
 // Implements Results interface.
 func (r *ResultsProxy) SetStatus(status Status) {
 	r.Atomic(func(results Results) { results.SetStatus(status) })

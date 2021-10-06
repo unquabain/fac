@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Unquabain/thing-doer/spec"
+	"github.com/Unquabain/fac/task"
 	"github.com/jroimartin/gocui"
 )
 
@@ -24,26 +24,26 @@ const (
 	FCStdErr
 )
 
-// SpecLayoutManager is the main program layout manager.
+// TaskLayoutManager is the main program layout manager.
 // It divides the screen into three columns: the left for
-// the Spec list, and the remaining are STDOUT and STDIN
-// for the running specs. While specs are running the
+// the Task list, and the remaining are STDOUT and STDIN
+// for the running tasks. While tasks are running the
 // STDOUT and STDIN space is divided vertically for the
-// running specs. Once it's done, you can use the arrow
-// keys to navigate through the completed specs and
+// running tasks. Once it's done, you can use the arrow
+// keys to navigate through the completed tasks and
 // examine their output.
-type SpecLayoutManager struct {
-	spec.SpecList
+type TaskLayoutManager struct {
+	task.TaskList
 	IsFinished bool
 	FocusColumn
 	FocusRow      int
 	outputWidgets OutputWidgetRegistry
 }
 
-func (slm *SpecLayoutManager) sorted() []*spec.Spec {
-	slice := make([]*spec.Spec, len(slm.SpecList))
+func (slm *TaskLayoutManager) sorted() []*task.Task {
+	slice := make([]*task.Task, len(slm.TaskList))
 	i := 0
-	for _, s := range slm.SpecList {
+	for _, s := range slm.TaskList {
 		slice[i] = s
 		i++
 	}
@@ -53,15 +53,15 @@ func (slm *SpecLayoutManager) sorted() []*spec.Spec {
 	return slice
 }
 
-func (slm *SpecLayoutManager) showConsole(pos int, s *spec.Spec) bool {
+func (slm *TaskLayoutManager) showConsole(pos int, s *task.Task) bool {
 	if slm.IsFinished {
 		return slm.FocusRow == pos
 	}
-	return s.GetStatus() == spec.StatusRunning
+	return s.GetStatus() == task.StatusRunning
 }
 
 // Update enques a re-lay-out the screen from a goroutine.
-func (slm *SpecLayoutManager) Update(g *gocui.Gui) {
+func (slm *TaskLayoutManager) Update(g *gocui.Gui) {
 	g.Update(func(gg *gocui.Gui) error {
 		slm.Layout(gg)
 		return nil
@@ -70,37 +70,37 @@ func (slm *SpecLayoutManager) Update(g *gocui.Gui) {
 
 // ArrowUp updates the internal state in response to
 // an Arrow Up keyboard event in the task list.
-func (slm *SpecLayoutManager) ArrowUp() {
-	l := len(slm.SpecList)
+func (slm *TaskLayoutManager) ArrowUp() {
+	l := len(slm.TaskList)
 	slm.FocusRow = (l + slm.FocusRow - 1) % l
 }
 
 // ArrowDown updates the internal state in response to
 // an Arrow Down keyboard event in the task list.
-func (slm *SpecLayoutManager) ArrowDown() {
-	l := len(slm.SpecList)
+func (slm *TaskLayoutManager) ArrowDown() {
+	l := len(slm.TaskList)
 	slm.FocusRow = (slm.FocusRow + 1) % l
 }
 
 // SetFocusTaskList sets the internal state to focus on the
 // individual tasks in the task list.
-func (slm *SpecLayoutManager) SetFocusTaskList() {
+func (slm *TaskLayoutManager) SetFocusTaskList() {
 	slm.FocusColumn = FCTaskList
 }
 
 // SetFocusStdOut sets the internal state to display the
 // STDOUT pane as focused.
-func (slm *SpecLayoutManager) SetFocusStdOut() {
+func (slm *TaskLayoutManager) SetFocusStdOut() {
 	slm.FocusColumn = FCStdOut
 }
 
 // SetFocusStdErr sets the internal state to display the
 // STDERR pane as focused.
-func (slm *SpecLayoutManager) SetFocusStdErr() {
+func (slm *TaskLayoutManager) SetFocusStdErr() {
 	slm.FocusColumn = FCStdErr
 }
 
-func (slm *SpecLayoutManager) setStatusKeybindings(w *StatusWidget, g *gocui.Gui) {
+func (slm *TaskLayoutManager) setStatusKeybindings(w *StatusWidget, g *gocui.Gui) {
 	g.DeleteKeybindings(w.viewName())
 	g.SetKeybinding(
 		w.viewName(),
@@ -134,7 +134,7 @@ func (slm *SpecLayoutManager) setStatusKeybindings(w *StatusWidget, g *gocui.Gui
 	)
 }
 
-func (slm *SpecLayoutManager) setStdoutKeybindings(sow *OutputWidget, g *gocui.Gui) {
+func (slm *TaskLayoutManager) setStdoutKeybindings(sow *OutputWidget, g *gocui.Gui) {
 	g.DeleteKeybindings(sow.viewName())
 	g.SetKeybinding(
 		sow.viewName(),
@@ -208,7 +208,7 @@ func (slm *SpecLayoutManager) setStdoutKeybindings(sow *OutputWidget, g *gocui.G
 	)
 }
 
-func (slm *SpecLayoutManager) setStderrKeybindings(sew *OutputWidget, g *gocui.Gui) {
+func (slm *TaskLayoutManager) setStderrKeybindings(sew *OutputWidget, g *gocui.Gui) {
 	g.DeleteKeybindings(sew.viewName())
 	g.SetKeybinding(
 		sew.viewName(),
@@ -274,10 +274,10 @@ func (slm *SpecLayoutManager) setStderrKeybindings(sew *OutputWidget, g *gocui.G
 
 // Layout satisfies the gocui.Manager interface.
 // The main drawing logic of the manager.
-func (slm *SpecLayoutManager) Layout(g *gocui.Gui) error {
+func (slm *TaskLayoutManager) Layout(g *gocui.Gui) error {
 	debugger.Reset()
 	if !slm.IsFinished {
-		slm.IsFinished = slm.SpecList.IsFinished()
+		slm.IsFinished = slm.TaskList.IsFinished()
 	}
 	dims := newLayoutDims(g.Size())
 	sorted := slm.sorted()

@@ -1,28 +1,28 @@
 package display
 
 import (
-	"github.com/Unquabain/thing-doer/spec"
+	"github.com/Unquabain/fac/task"
 	"github.com/jroimartin/gocui"
 )
 
 // StatusWidget is a widget that displays the current status of
-// a Spec in the left-hand column.
+// a Task in the left-hand column.
 type StatusWidget Widget
 
-func newStatusWidget(task *spec.Spec, width int, yIter func() int) *StatusWidget {
+func newStatusWidget(t *task.Task, width int, yIter func() int) *StatusWidget {
 	w := new(StatusWidget)
-	w.Title = task.Name
+	w.Title = t.Name
 	w.X = 0
 	w.Y = yIter()
 	w.H = 2
 	w.W = width
-	status := task.GetStatus()
+	status := t.GetStatus()
 	w.Stringer = status
 	if !status.IsOK() {
 		w.Attribute = gocui.ColorRed
-	} else if status == spec.StatusRunning {
+	} else if status == task.StatusRunning {
 		w.Attribute = gocui.ColorYellow
-	} else if status == spec.StatusSucceeded {
+	} else if status == task.StatusSucceeded {
 		w.Attribute = gocui.ColorGreen
 	}
 	w.Focus = false

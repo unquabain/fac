@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Unquabain/thing-doer/util"
+	"github.com/Unquabain/fac/util"
 	"github.com/jroimartin/gocui"
 )
 

@@ -1,34 +1,34 @@
-package spec
+package task
 
 import (
 	"fmt"
 	"log"
 	"strings"
 
-	"github.com/Unquabain/thing-doer/util"
+	"github.com/Unquabain/fac/util"
 )
 
-// SpecList represents all the Specs found in the spec file (YAML)
+// TaskList represents all the Tasks found in the task file (YAML)
 // and includes the methods to resolve their interdependencies and
 // run them.
-type SpecList map[string]*Spec
+type TaskList map[string]*Task
 
-// UnmarshalYAML decorates the Specs found in the YAML spec file
-// with some additional properties and initializes the Specs'
+// UnmarshalYAML decorates the Tasks found in the YAML task file
+// with some additional properties and initializes the Tasks'
 // internal structures.
-func (sl SpecList) UnmarshalYAML(unmarshal func(interface{}) error) error {
-	temp := make(map[string]*Spec)
+func (sl TaskList) UnmarshalYAML(unmarshal func(interface{}) error) error {
+	temp := make(map[string]*Task)
 	err := unmarshal(&temp)
 	if err != nil {
 		return err
 	}
 	count := 0
-	for key, spec := range temp {
-		spec.Name = key
-		spec.Order = count
+	for key, task := range temp {
+		task.Name = key
+		task.Order = count
 		count++
-		spec.results = NewResultsProxy()
-		sl[key] = spec
+		task.results = NewResultsProxy()
+		sl[key] = task
 	}
 	return nil
 }
@@ -43,28 +43,28 @@ func parseDependencyName(depencencyName string) (key string, positive bool) {
 	return
 }
 
-// IsRunnable examines a Spec's dependency list and determines
+// IsRunnable examines a Task's dependency list and determines
 // if it has been satisfied.
-func (sl SpecList) IsRunnable(spec *Spec) (bool, error) {
-	if spec.GetStatus() != StatusNotRun {
+func (sl TaskList) IsRunnable(task *Task) (bool, error) {
+	if task.GetStatus() != StatusNotRun {
 		return false, nil
 	}
-	if len(spec.Dependencies) == 0 {
+	if len(task.Dependencies) == 0 {
 		return true, nil
 	}
-	for _, dep := range spec.Dependencies {
+	for _, dep := range task.Dependencies {
 		key, positive := parseDependencyName(dep)
-		depSpec, ok := sl[key]
+		depTask, ok := sl[key]
 		if !ok {
-			return false, fmt.Errorf(`dependency not found for %q: %q`, spec.Name, dep)
+			return false, fmt.Errorf(`dependency not found for %q: %q`, task.Name, dep)
 		}
 		successStatus, failedStatus := StatusSucceeded, StatusFailed
 		if !positive {
 			successStatus, failedStatus = failedStatus, successStatus
 		}
-		dsStatus := depSpec.GetStatus()
+		dsStatus := depTask.GetStatus()
 		if dsStatus == failedStatus || dsStatus == StatusDependenciesNotMet {
-			spec.results.SetStatus(StatusDependenciesNotMet)
+			task.results.SetStatus(StatusDependenciesNotMet)
 			return false, nil
 		}
 		if dsStatus != successStatus {
@@ -74,51 +74,51 @@ func (sl SpecList) IsRunnable(spec *Spec) (bool, error) {
 	return true, nil
 }
 
-// ReadyToRun returns a list of all the Specs that are currently
+// ReadyToRun returns a list of all the Tasks that are currently
 // ready to run because their dependencies have been satisified.
-func (sl SpecList) ReadyToRun() ([]*Spec, error) {
-	runnables := make([]*Spec, 0, len(sl))
-	for _, spec := range sl {
-		runnable, err := sl.IsRunnable(spec)
+func (sl TaskList) ReadyToRun() ([]*Task, error) {
+	runnables := make([]*Task, 0, len(sl))
+	for _, task := range sl {
+		runnable, err := sl.IsRunnable(task)
 		if err != nil {
-			return nil, fmt.Errorf(`invalid specification list: %w`, err)
+			return nil, fmt.Errorf(`invalid taskification list: %w`, err)
 		}
 		if runnable {
-			runnables = append(runnables, spec)
+			runnables = append(runnables, task)
 		}
 	}
 	return runnables, nil
 }
 
-// IsFinished tells the caller if all the Specs that can be
+// IsFinished tells the caller if all the Tasks that can be
 // run have been run (successfully or not).
-func (sl SpecList) IsFinished() bool {
-	for _, spec := range sl {
-		if spec.GetStatus() == StatusNotRun {
+func (sl TaskList) IsFinished() bool {
+	for _, task := range sl {
+		if task.GetStatus() == StatusNotRun {
 			return false
 		}
 	}
 	return true
 }
 
-// RunAll runs all the Specs, resolving their dependencies to
+// RunAll runs all the Tasks, resolving their dependencies to
 // run as many as it can in parallel. The function blocks until
-// all Specs have been run, but the handler() callback will be
-// called several times for each spec from different goroutines.
+// all Tasks have been run, but the handler() callback will be
+// called several times for each task from different goroutines.
 //
-// First, all the specs that have no dependencies are run in
-// parallel. After each spec finishes, the SpecList checks to
-// see if any more specs have had their dependencies satisfied
-// and launches those. The procedure runs until all specs have
+// First, all the tasks that have no dependencies are run in
+// parallel. After each task finishes, the TaskList checks to
+// see if any more tasks have had their dependencies satisfied
+// and launches those. The procedure runs until all tasks have
 // either run or been marked unrunnable (because their
 // dependencies failed).
 //
-// If it ever finds that there are no currently running Specs,
-// but no runnable Specs, but Specs that have not yet been run,
+// If it ever finds that there are no currently running Tasks,
+// but no runnable Tasks, but Tasks that have not yet been run,
 // it returns an error. It will also return an error if at least
-// one Spec returns an error, though it may accumulate more errors,
+// one Task returns an error, though it may accumulate more errors,
 // which are printed on STDERR.
-func (sl SpecList) RunAll(handler func(*Spec)) error {
+func (sl TaskList) RunAll(handler func(*Task)) error {
 	runningTasks := new(util.Counter)
 	errors := util.NewErrorList()
 	gate := make(chan struct{})
@@ -128,7 +128,7 @@ func (sl SpecList) RunAll(handler func(*Spec)) error {
 	for !sl.IsFinished() {
 		rtr, err := sl.ReadyToRun() // All dependencies met successfully
 		if err != nil {
-			return fmt.Errorf(`failed determine runnable specs: %w`, err)
+			return fmt.Errorf(`failed determine runnable tasks: %w`, err)
 		}
 		newTasks := len(rtr)
 		if runningTasks.Val() == 0 && newTasks == 0 {
@@ -142,8 +142,8 @@ func (sl SpecList) RunAll(handler func(*Spec)) error {
 
 		// This loop may be empty if there are still
 		// tasks running.
-		for _, spec := range rtr {
-			go func(s *Spec) {
+		for _, task := range rtr {
+			go func(s *Task) {
 				defer func() {
 					runningTasks.Dec()
 					// Gate is unbuffered. This will block until
@@ -152,10 +152,10 @@ func (sl SpecList) RunAll(handler func(*Spec)) error {
 				}()
 				errInner := s.Run(handler)
 				if errInner != nil {
-					errors.Appendf(`error running spec %q: %w`, s.Name, err)
+					errors.Appendf(`error running task %q: %w`, s.Name, err)
 					return
 				}
-			}(spec)
+			}(task)
 		}
 		// Wait until one task finishes, then loop around
 		// to re-evaluate if any tasks have had their
@@ -168,7 +168,7 @@ func (sl SpecList) RunAll(handler func(*Spec)) error {
 			for _, err = range errors.Errors() {
 				log.Println(err)
 			}
-			return fmt.Errorf(`received one or more errors running specs, the last of which is %w`, err)
+			return fmt.Errorf(`received one or more errors running tasks, the last of which is %w`, err)
 		}
 	}
 	return nil

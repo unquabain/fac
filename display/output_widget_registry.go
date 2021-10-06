@@ -3,7 +3,7 @@ package display
 import (
 	"fmt"
 
-	"github.com/Unquabain/thing-doer/spec"
+	"github.com/Unquabain/fac/task"
 )
 
 type registryKey struct {
@@ -16,7 +16,7 @@ type registryKey struct {
 // to preserve state.
 type OutputWidgetRegistry map[registryKey]*OutputWidget
 
-func (r OutputWidgetRegistry) makeOutputWidget(dims *layoutDims, task *spec.Spec, channel OutputWidgetChannel) *OutputWidget {
+func (r OutputWidgetRegistry) makeOutputWidget(dims *layoutDims, task *task.Task, channel OutputWidgetChannel) *OutputWidget {
 	key := registryKey{Title: task.Name, Channel: channel}
 	sow, ok := r[key]
 	if !ok {
@@ -37,10 +37,10 @@ func (r OutputWidgetRegistry) makeOutputWidget(dims *layoutDims, task *spec.Spec
 	return sow
 }
 
-func (r OutputWidgetRegistry) makeStdOutWidget(dims *layoutDims, task *spec.Spec) *OutputWidget {
+func (r OutputWidgetRegistry) makeStdOutWidget(dims *layoutDims, task *task.Task) *OutputWidget {
 	return r.makeOutputWidget(dims, task, OWCStdOut)
 }
 
-func (r OutputWidgetRegistry) makeStdErrWidget(dims *layoutDims, task *spec.Spec) *OutputWidget {
+func (r OutputWidgetRegistry) makeStdErrWidget(dims *layoutDims, task *task.Task) *OutputWidget {
 	return r.makeOutputWidget(dims, task, OWCStdErr)
 }

@@ -1,4 +1,4 @@
-package spec
+package task
 
 import (
 	"fmt"
@@ -29,16 +29,16 @@ Only On Fail:
     - "! Clear Logs"
 `
 
-func getSpecListFromYaml(serialized string) (SpecList, error) {
-	list := make(SpecList)
+func getTaskListFromYaml(serialized string) (TaskList, error) {
+	list := make(TaskList)
 	err := yaml.Unmarshal([]byte(serialized), &list)
 	if err != nil {
-		return nil, fmt.Errorf(`could not unmarshal spec from YAML: %v`, err)
+		return nil, fmt.Errorf(`could not unmarshal task from YAML: %v`, err)
 	}
 	return list, nil
 }
 func TestUnmarshalYAML(t *testing.T) {
-	list, err := getSpecListFromYaml(exampleYAML)
+	list, err := getTaskListFromYaml(exampleYAML)
 	if err != nil {
 		t.Fatalf(`could not test validity of unmarshaled list: %v`, err)
 	}
@@ -46,74 +46,74 @@ func TestUnmarshalYAML(t *testing.T) {
 		t.Fatalf(`unexpected length of list: %d`, actual)
 	}
 
-	spec, ok := list[`Clear Logs`]
+	task, ok := list[`Clear Logs`]
 	if !ok {
 		t.Fatalf(`unable to find "Clear Logs"`)
 	}
-	if spec == nil {
-		t.Fatalf(`returned spec was nil`)
+	if task == nil {
+		t.Fatalf(`returned task was nil`)
 	}
 
-	if actual := spec.Name; actual != `Clear Logs` {
+	if actual := task.Name; actual != `Clear Logs` {
 		t.Fatalf(`unexpected name. Expected "Clear Logs"; found %q`, actual)
 	}
 
-	if actual := spec.Command; actual != `zsh` {
+	if actual := task.Command; actual != `zsh` {
 		t.Fatalf(`unexpected command. Expected "zsh", was %q`, actual)
 	}
 
-	if actual := spec.Args; len(actual) != 3 {
+	if actual := task.Args; len(actual) != 3 {
 		t.Fatalf(`unexpected args. Expected ["rm", "logs/development.txt", "logs/test.txt"]. Received %v`, actual)
 	}
 
-	if actual := len(spec.Environment); actual != 1 {
+	if actual := len(task.Environment); actual != 1 {
 		t.Fatalf(`unexpected environment length. Expected 1; received %v`, actual)
 	}
 
-	if actual, ok := spec.Environment[`RAILS_ENV`]; !ok || actual != `development` {
+	if actual, ok := task.Environment[`RAILS_ENV`]; !ok || actual != `development` {
 		t.Fatalf(`expected environment variable not present. Expected RAILS_ENV to equal "development"; was %q`, actual)
 	}
 
-	if actual := spec.ExpectedReturnCode; actual != 7 {
+	if actual := task.ExpectedReturnCode; actual != 7 {
 		t.Fatalf(`unexpected expected return code. Expected 7. Received %v`, actual)
 	}
 
-	if actual := spec.results; actual == nil {
+	if actual := task.results; actual == nil {
 		t.Fatalf(`expected results not to be nil; was`)
 	}
 
-	spec, ok = list[`Update Bundler`]
+	task, ok = list[`Update Bundler`]
 	if !ok {
 		t.Fatalf(`unable to find "Update Bundler"`)
 	}
 
-	if actual := spec.Name; actual != `Update Bundler` {
+	if actual := task.Name; actual != `Update Bundler` {
 		t.Fatalf(`unexpected name. Expected "Update Bundler"; found %q`, actual)
 	}
 
-	if actual := spec.Dependencies; len(actual) != 1 {
+	if actual := task.Dependencies; len(actual) != 1 {
 		t.Fatalf(`unexpected dependenceis. Expected ["Clear Logs"]; found %v`, actual)
 	}
 
 }
 
 func TestIsRunnable(t *testing.T) {
-	list, err := getSpecListFromYaml(exampleYAML)
+	list, err := getTaskListFromYaml(exampleYAML)
 	if err != nil {
 		t.Fatalf(`could not test IsRunnable method: %v`, err)
 	}
 
 	clearLogs, ok := list[`Clear Logs`]
 	if !ok {
-		t.Fatalf(`did not find spec entry for "Clear Logs"`)
+		t.Fatalf(`did not find task entry for "Clear Logs"`)
 	}
 	updateBundler, ok := list[`Update Bundler`]
 	if !ok {
-		t.Fatalf(`did not find spec entry for "Update Bundler"`)
+		t.Fatalf(`did not find task entry for "Update Bundler"`)
 	}
 	onlyOnFail, ok := list[`Only On Fail`]
 	if !ok {
-		t.Fatalf(`did not find spec entry for "Only On Fail"`)
+		t.Fatalf(`did not find task entry for "Only On Fail"`)
 	}
 
 	// "Clear Logs" has no dependencies and has not yet been run.
@@ -204,16 +204,16 @@ func TestIsRunnable(t *testing.T) {
 }
 
 func TestReadyToRun(t *testing.T) {
-	list, err := getSpecListFromYaml(exampleYAML)
+	list, err := getTaskListFromYaml(exampleYAML)
 	if err != nil {
 		t.Fatalf(`could not test ReadyToRun method: %v`, err)
 	}
 	rtr, err := list.ReadyToRun()
 	if err != nil {
-		t.Fatalf(`could not get ready-to-run specs: %v`, err)
+		t.Fatalf(`could not get ready-to-run tasks: %v`, err)
 	}
 	if actual := len(rtr); actual != 1 {
-		t.Fatalf(`expected one ready-to-run spec: Found %d`, actual)
+		t.Fatalf(`expected one ready-to-run task: Found %d`, actual)
 	}
 	if actual := rtr[0].Name; actual != `Clear Logs` {
 		t.Fatalf(`expected "Clear Logs" to be ready, but %q was`, actual)
@@ -224,10 +224,10 @@ func TestReadyToRun(t *testing.T) {
 
 	rtr, err = list.ReadyToRun()
 	if err != nil {
-		t.Fatalf(`could not get ready-to-run specs: %v`, err)
+		t.Fatalf(`could not get ready-to-run tasks: %v`, err)
 	}
 	if actual := len(rtr); actual != 1 {
-		t.Fatalf(`expected one ready-to-run spec: Found %d`, actual)
+		t.Fatalf(`expected one ready-to-run task: Found %d`, actual)
 	}
 	if actual := rtr[0].Name; actual != `Update Bundler` {
 		t.Fatalf(`expected "Update Bundler" to be ready, but %q was`, actual)
@@ -235,7 +235,7 @@ func TestReadyToRun(t *testing.T) {
 }
 
 func TestIsFinished(t *testing.T) {
-	list, err := getSpecListFromYaml(exampleYAML)
+	list, err := getTaskListFromYaml(exampleYAML)
 	if err != nil {
 		t.Fatalf(`could not test IsFinished method: %v`, err)
 	}

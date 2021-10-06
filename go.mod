@@ -1,4 +1,4 @@
-module github.com/Unquabain/thing-doer
+module github.com/Unquabain/fac
 
 go 1.17
 
