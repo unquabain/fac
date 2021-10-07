@@ -131,10 +131,17 @@ func (sl TaskList) RunAll(handler func(*Task)) error {
 			return fmt.Errorf(`failed determine runnable tasks: %w`, err)
 		}
 		newTasks := len(rtr)
-		if runningTasks.Val() == 0 && newTasks == 0 {
+		if runningTasks.Val() == 0 && newTasks == 0 && !sl.IsFinished() {
 			// No running tasks, no new tasks, but some tasks are still
 			// waiting to run. That means a dependency loop.
-			return fmt.Errorf(`deadlock detected: not finished, but not ready to run`)
+			taskdump := new(strings.Builder)
+			for name, task := range sl {
+				fmt.Fprintf(taskdump, "%s: %s\n", name, task.GetStatus())
+				for _, dep := range task.Dependencies {
+					fmt.Fprintf(taskdump, "\t- %s\n", dep)
+				}
+			}
+			return fmt.Errorf("deadlock detected: not finished, but not ready to run\n%s", taskdump.String())
 		}
 
 		// Keep track of how many tasks are in-flight.
@@ -152,7 +159,7 @@ func (sl TaskList) RunAll(handler func(*Task)) error {
 				}()
 				errInner := s.Run(handler)
 				if errInner != nil {
-					errors.Appendf(`error running task %q: %w`, s.Name, err)
+					errors.Appendf(`error running task %q: %w`, s.Name, errInner)
 					return
 				}
 			}(task)

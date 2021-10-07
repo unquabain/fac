@@ -166,7 +166,8 @@ func (s *Task) Run(updateHandler func(*Task)) error {
 	}()
 	wg.Wait()
 	if err := cmd.Wait(); err != nil {
-		return fmt.Errorf(`command failed %q %v: %w`, s.Command, s.Args, err)
+		s.results.SetStatus(StatusFailed)
+		s.results.AppendStdErr(fmt.Sprintf(`command failed %q %v: %v`, s.Command, s.Args, err))
 	}
 	s.results.SetReturnCode(cmd.ProcessState.ExitCode())
 	s.evaluateSuccess()
